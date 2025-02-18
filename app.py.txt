@@ -1,0 +1,278 @@
+# import streamlit as st
+# import pandas as pd
+# import numpy as np
+# import pickle
+# from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
+# import seaborn as sns
+# import matplotlib.pyplot as plt
+
+# # Load pickled models
+# model_filenames = {
+#     'Logistic Regression': 'logistic_regression_pipeline.pkl',
+#     'SVM': 'svm_pipeline.pkl',
+#     'KNN': 'knn_pipeline.pkl',
+#     'Naive Bayes': 'naive_bayes_pipeline.pkl',
+#     'Random Forest': 'random_forest_pipeline.pkl',
+#     'XGBoost': 'xgboost_pipeline.pkl'
+# }
+
+# models = {name: pickle.load(open(filename, 'rb')) for name, filename in model_filenames.items()}
+
+# # Feature names
+# features = ['Age', 'BMI', 'Glucose_level', 'Hypertension', 'Heart_Disease', 'Gender']
+
+# # Streamlit app
+# st.title("Stroke Prediction: Interactive App")
+
+# # Model selection
+# selected_model = st.selectbox("Select a Model", list(models.keys()))
+
+# # Tabs for single and batch predictions
+# tab1, tab2 = st.tabs(["Single Prediction", "Batch Prediction"])
+
+# # --- Single Prediction Tab ---
+# with tab1:
+#     st.header(f"Single Prediction using {selected_model}")
+
+#     # Collect user inputs
+#     age = st.number_input("Enter Age:", min_value=0, max_value=120, value=30, step=1)
+#     bmi = st.number_input("Enter BMI:", min_value=10.0, max_value=50.0, value=22.0, step=0.1)
+#     glucose_level = st.number_input("Enter Glucose Level:", min_value=50.0, max_value=300.0, value=100.0, step=0.1)
+
+#     # Hypertension: Yes/No
+#     hypertension = st.selectbox("Do you have Hypertension?", options=["No", "Yes"])
+#     hypertension_value = 1 if hypertension == "Yes" else 0
+
+#     # Heart Disease: Yes/No
+#     heart_disease = st.selectbox("Do you have Heart Disease?", options=["No", "Yes"])
+#     heart_disease_value = 1 if heart_disease == "Yes" else 0
+
+#     # Gender: Male/Other
+#     gender = st.selectbox("Select your Gender:", options=["Male", "Other"])
+#     gender_value = 1 if gender == "Male" else 0  # One-hot encoding logic
+
+#     # Prepare input data
+#     input_data = pd.DataFrame([{
+#         'Age': age,
+#         'BMI': bmi,
+#         'Glucose_level': glucose_level,
+#         'Hypertension': hypertension_value,
+#         'Heart_Disease': heart_disease_value,
+#         'Gender': gender_value
+#     }])
+
+#     # Predict
+#     if st.button("Predict"):
+#         model = models[selected_model]
+#         prediction = model.predict(input_data)[0]
+#         prediction_proba = model.predict_proba(input_data)[0]
+
+#         # Display results
+#         st.write(f"Prediction: {'Stroke' if prediction == 1 else 'No Stroke'}")
+#         st.write(f"Probability of Stroke: {prediction_proba[1]:.4f}")
+
+#         # Feedback
+#         if prediction == 1:
+#             st.warning("This individual is at risk of stroke. Please consult a healthcare professional.")
+#         else:
+#             st.success("This individual is not at significant risk of stroke.")
+
+# # --- Batch Prediction Tab ---
+# with tab2:
+#     st.header(f"Batch Prediction using {selected_model}")
+#     uploaded_file = st.file_uploader("Upload a CSV file with the following columns: " + ", ".join(features))
+
+#     if uploaded_file is not None:
+#         # Read the uploaded file
+#         batch_data = pd.read_csv(uploaded_file)
+
+#         # Validate input
+#         if not all(col in batch_data.columns for col in features):
+#             st.error("The uploaded file must contain all required features.")
+#         else:
+#             model = models[selected_model]
+
+#             # Predict
+#             predictions = model.predict(batch_data)
+#             prediction_proba = model.predict_proba(batch_data)
+
+#             # Add predictions to the original data
+#             batch_data['Prediction'] = predictions
+#             batch_data['Stroke_Probability'] = prediction_proba[:, 1]
+
+#             # Display predictions
+#             st.write("Predictions:")
+#             st.dataframe(batch_data)
+
+#             # Download option for results
+#             csv = batch_data.to_csv(index=False)
+#             st.download_button(
+#                 label="Download Predictions as CSV",
+#                 data=csv,
+#                 file_name="stroke_predictions.csv",
+#                 mime="text/csv",
+#             )
+
+#             # Visualizations
+#             st.write("Confusion Matrix:")
+#             if 'Stroke' in batch_data.columns:  # If ground truth is provided
+#                 y_true = batch_data['Stroke']
+#                 y_pred = predictions
+#                 cm = confusion_matrix(y_true, y_pred)
+#                 sns.heatmap(cm, annot=True, fmt="g", cmap="Blues", xticklabels=["No Stroke", "Stroke"], yticklabels=["No Stroke", "Stroke"])
+#                 st.pyplot(plt)
+
+#                 st.write("ROC Curve:")
+#                 fpr, tpr, _ = roc_curve(y_true, prediction_proba[:, 1])
+#                 plt.figure(figsize=(8, 6))
+#                 plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC Curve (AUC = {roc_auc_score(y_true, prediction_proba[:, 1]):.2f})')
+#                 plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+#                 plt.xlabel("False Positive Rate")
+#                 plt.ylabel("True Positive Rate")
+#                 plt.title("ROC Curve")
+#                 plt.legend(loc="lower right")
+#                 st.pyplot(plt)
+
+
+
+import streamlit as st
+import pandas as pd
+import numpy as np
+import pickle
+from sklearn.metrics import roc_curve, roc_auc_score, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load pickled models
+model_filenames = {
+    'Logistic Regression': 'logistic_regression_pipeline.pkl',
+    'SVM': 'svm_pipeline.pkl',
+    'KNN': 'knn_pipeline.pkl',
+    'Naive Bayes': 'naive_bayes_pipeline.pkl',
+    'Random Forest': 'random_forest_pipeline.pkl',
+    'XGBoost': 'xgboost_pipeline.pkl'
+}
+
+models = {name: pickle.load(open(filename, 'rb')) for name, filename in model_filenames.items()}
+
+# Feature names
+features = ['Age', 'BMI', 'Glucose_level', 'Hypertension', 'Heart_Disease', 'Gender']
+
+# Streamlit app
+st.title("Stroke Prediction: Interactive App")
+
+# Model selection
+selected_model = st.selectbox("Select a Model", list(models.keys()))
+
+# Tabs for single and batch predictions
+tab1, tab2 = st.tabs(["Single Prediction", "Batch Prediction"])
+
+# --- Single Prediction Tab ---
+with tab1:
+    st.header(f"Single Prediction using {selected_model}")
+
+    # Collect user inputs
+    age = st.number_input("Enter Age:", min_value=0, max_value=120, value=30, step=1)
+    bmi = st.number_input("Enter BMI:", min_value=10.0, max_value=50.0, value=22.0, step=0.1)
+    glucose_level = st.number_input("Enter Glucose Level:", min_value=50.0, max_value=300.0, value=100.0, step=0.1)
+
+    # Hypertension: Yes/No
+    hypertension = st.selectbox("Do you have Hypertension?", options=["No", "Yes"])
+    hypertension_value = 1 if hypertension == "Yes" else 0
+
+    # Heart Disease: Yes/No
+    heart_disease = st.selectbox("Do you have Heart Disease?", options=["No", "Yes"])
+    heart_disease_value = 1 if heart_disease == "Yes" else 0
+
+    # Gender: Male/Other
+    gender = st.selectbox("Select your Gender:", options=["Male", "Other"])
+    gender_value = 1 if gender == "Male" else 0  # One-hot encoding logic
+
+    # Prepare input data
+    input_data = pd.DataFrame([{
+        'Age': age,
+        'BMI': bmi,
+        'Glucose_level': glucose_level,
+        'Hypertension': hypertension_value,
+        'Heart_Disease': heart_disease_value,
+        'Gender': gender_value
+    }])
+
+    # Predict
+    if st.button("Predict"):
+        model = models[selected_model]
+        prediction = model.predict(input_data)[0]
+        prediction_proba = model.predict_proba(input_data)[0]
+
+        # Display results
+        st.write(f"Prediction: {'Stroke' if prediction == 1 else 'No Stroke'}")
+        st.write(f"Probability of Stroke: {prediction_proba[1]:.4f}")
+
+        # Feedback
+        if prediction == 1:
+            st.warning("This individual is at risk of stroke. Please consult a healthcare professional.")
+        else:
+            st.success("This individual is not at significant risk of stroke.")
+
+# --- Batch Prediction Tab ---
+with tab2:
+    st.header(f"Batch Prediction using {selected_model}")
+    uploaded_file = st.file_uploader("Upload a CSV file with the following columns: " + ", ".join(features))
+
+    if uploaded_file is not None:
+        # Read the uploaded file
+        batch_data = pd.read_csv(uploaded_file)
+
+        # Validate input
+        missing_columns = [col for col in features if col not in batch_data.columns]
+        if missing_columns:
+            st.error(f"The uploaded file is missing the following columns: {', '.join(missing_columns)}")
+        else:
+            # Reorder columns to match the required feature order
+            batch_data = batch_data[features]
+
+            model = models[selected_model]
+
+            # Predict
+            predictions = model.predict(batch_data)
+            prediction_proba = model.predict_proba(batch_data)
+
+            # Add predictions to the original data
+            batch_data['Prediction'] = predictions
+            batch_data['Stroke_Probability'] = prediction_proba[:, 1]
+
+            # Display predictions
+            st.write("Predictions:")
+            st.dataframe(batch_data)
+
+            # Download option for results
+            csv = batch_data.to_csv(index=False)
+            st.download_button(
+                label="Download Predictions as CSV",
+                data=csv,
+                file_name="stroke_predictions.csv",
+                mime="text/csv",
+            )
+
+            # Visualizations
+            if 'Stroke' in batch_data.columns:  # If ground truth is provided
+                st.write("Confusion Matrix:")
+                try:
+                    y_true = batch_data['Stroke']
+                    y_pred = predictions
+                    cm = confusion_matrix(y_true, y_pred)
+                    sns.heatmap(cm, annot=True, fmt="g", cmap="Blues", xticklabels=["No Stroke", "Stroke"], yticklabels=["No Stroke", "Stroke"])
+                    st.pyplot(plt)
+
+                    st.write("ROC Curve:")
+                    fpr, tpr, _ = roc_curve(y_true, prediction_proba[:, 1])
+                    plt.figure(figsize=(8, 6))
+                    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC Curve (AUC = {roc_auc_score(y_true, prediction_proba[:, 1]):.2f})')
+                    plt.plot([0, 1], [0, 1], color='navy', linestyle='--')
+                    plt.xlabel("False Positive Rate")
+                    plt.ylabel("True Positive Rate")
+                    plt.title("ROC Curve")
+                    plt.legend(loc="lower right")
+                    st.pyplot(plt)
+                except ValueError:
+                    st.warning("Unable to plot Confusion Matrix or ROC Curve due to missing ground truth labels.")
